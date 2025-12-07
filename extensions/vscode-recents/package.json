@@ -28,6 +28,7 @@
       "description": "The flavour of VSCode to use",
       "data": [
         { "title": "Cursor", "value": "Cursor" },
+        { "title": "Positron", "value": "Positron" },
         { "title": "VSCodium", "value": "VSCodium" },
         { "title": "Visual Studio Code", "value": "Code" },
         { "title": "Visual Studio Code (Insiders)", "value": "Code - Insiders" }

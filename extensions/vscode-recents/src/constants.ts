@@ -10,6 +10,7 @@ export const WORKSPACE_EXTENSION = ".code-workspace";
 export const VSCODE_EXECUTABLES: Record<string, string> = {
     Code: "code",
     Cursor: "cursor",
+    Positron: "positron",
     VSCodium: "codium",
     "Code - Insiders": "code-insiders",
 };
