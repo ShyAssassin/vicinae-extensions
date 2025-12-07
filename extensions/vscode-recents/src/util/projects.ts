@@ -2,29 +2,67 @@ import { existsSync } from "fs";
 import { ERROR_MESSAGES } from "../constants";
 import { queryRecentProjects } from "./database";
 import { RecentProject, ProjectType, VSCodeRecentData, VSCodeDatabaseEntry } from "../types";
-import { decodeFileUri, getProjectLabel, sortProjectsByLastOpened } from "../helpers";
+import { decodeFileUri, decodeRemoteUri, isRemoteUri, getProjectLabel, sortProjectsByLastOpened } from "../helpers";
 
 function parseProjectEntry(entry: VSCodeDatabaseEntry): RecentProject | null {
     let projectPath = "";
     let type: ProjectType = ProjectType.Folder;
+    let remoteAuthority: string | undefined;
+    let isRemote = false;
 
-    if (entry.folderUri) {
-        type = ProjectType.Folder;
-        projectPath = decodeFileUri(entry.folderUri);
-    } else if (entry.workspace) {
-        type = ProjectType.Workspace;
-        projectPath = decodeFileUri(entry.workspace.configPath);
-    } else if (entry.fileUri) {
-        type = ProjectType.File;
-        projectPath = decodeFileUri(entry.fileUri);
+    // Check if this is a remote project
+    if (entry.remoteAuthority) {
+        isRemote = true;
+        remoteAuthority = entry.remoteAuthority;
+        type = ProjectType.RemoteSSH;
     }
 
-    // Skip if path is invalid or doesn't exist
-    if (!projectPath || !existsSync(projectPath)) {
+    if (entry.folderUri) {
+        if (isRemoteUri(entry.folderUri)) {
+            isRemote = true;
+            type = ProjectType.RemoteSSH;
+            const decoded = decodeRemoteUri(entry.folderUri);
+            projectPath = decoded.path;
+            remoteAuthority = remoteAuthority || decoded.authority;
+        } else {
+            type = ProjectType.Folder;
+            projectPath = decodeFileUri(entry.folderUri);
+        }
+    } else if (entry.workspace) {
+        if (isRemoteUri(entry.workspace.configPath)) {
+            isRemote = true;
+            type = ProjectType.RemoteSSH;
+            const decoded = decodeRemoteUri(entry.workspace.configPath);
+            projectPath = decoded.path;
+            remoteAuthority = remoteAuthority || decoded.authority;
+        } else {
+            type = ProjectType.Workspace;
+            projectPath = decodeFileUri(entry.workspace.configPath);
+        }
+    } else if (entry.fileUri) {
+        if (isRemoteUri(entry.fileUri)) {
+            isRemote = true;
+            type = ProjectType.RemoteSSH;
+            const decoded = decodeRemoteUri(entry.fileUri);
+            projectPath = decoded.path;
+            remoteAuthority = remoteAuthority || decoded.authority;
+        } else {
+            type = ProjectType.File;
+            projectPath = decodeFileUri(entry.fileUri);
+        }
+    }
+
+    // Skip if path is invalid
+    if (!projectPath) {
         return null;
     }
 
-    const label = getProjectLabel(projectPath, type === ProjectType.Workspace);
+    // For local projects, check if path exists
+    if (!isRemote && !existsSync(projectPath)) {
+        return null;
+    }
+
+    const label = getProjectLabel(projectPath, type === ProjectType.Workspace, remoteAuthority);
     const lastOpened = entry.lastAccessTime || Date.now();
 
     return {
@@ -32,6 +70,7 @@ function parseProjectEntry(entry: VSCodeDatabaseEntry): RecentProject | null {
         label: label,
         path: projectPath,
         lastOpened: lastOpened,
+        remoteAuthority: remoteAuthority,
     };
 }
 
