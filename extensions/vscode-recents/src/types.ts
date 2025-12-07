@@ -2,6 +2,7 @@ export enum ProjectType {
     File = "file",
     Folder = "folder",
     Workspace = "workspace",
+    RemoteSSH = "remote-ssh",
 }
 
 export interface RecentProject {
@@ -9,6 +10,7 @@ export interface RecentProject {
     label: string;
     type: ProjectType;
     lastOpened: number;
+    remoteAuthority?: string;
 }
 
 export interface VSCodeDatabaseEntry {
@@ -17,6 +19,7 @@ export interface VSCodeDatabaseEntry {
     workspace?: {
         configPath: string;
     };
+    remoteAuthority?: string;
     lastAccessTime?: number;
 }
 
