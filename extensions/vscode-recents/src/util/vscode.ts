@@ -1,6 +1,6 @@
 import { promisify } from "util";
 import { exec } from "child_process";
-import { Preferences } from "../types";
+import { Preferences, RecentProject, ProjectType } from "../types";
 import { VSCODE_EXECUTABLES, ERROR_MESSAGES } from "../constants";
 import { getPreferenceValues, showToast, Toast } from "@vicinae/api";
 
@@ -26,7 +26,7 @@ async function isExecutableAvailable(executable: string): Promise<boolean> {
     }
 }
 
-export async function openProjectInVSCode(projectPath: string): Promise<void> {
+export async function openProjectInVSCode(project: RecentProject): Promise<void> {
     const { vscodeFlavour } = getPreferenceValues<Preferences>();
     const executable = getVSCodeExecutable();
 
@@ -42,7 +42,18 @@ export async function openProjectInVSCode(projectPath: string): Promise<void> {
             return;
         }
 
-        await execAsync(`${executable} --new-window "${projectPath}"`);
+        let command: string;
+
+        if (project.type === ProjectType.RemoteSSH && project.remoteAuthority) {
+            // For remote SSH projects, construct the vscode-remote URI
+            const remoteUri = `vscode-remote://${project.remoteAuthority}${project.path}`;
+            command = `${executable} --new-window --folder-uri "${remoteUri}"`;
+        } else {
+            // For local projects, use the path directly
+            command = `${executable} --new-window "${project.path}"`;
+        }
+
+        await execAsync(command);
     } catch (error) {
         console.error(`Error opening project in ${vscodeFlavour}:`, error);
         showToast({
