@@ -1,11 +1,14 @@
 import { Action, ActionPanel, Icon, closeMainWindow, showInFileBrowser } from "@vicinae/api";
 import { openProjectInVSCode } from "../util/vscode";
+import { RecentProject, ProjectType } from "../types";
 
 interface ProjectActionsProps {
-    projectPath: string;
+    project: RecentProject;
 }
 
-export function ProjectActions({ projectPath }: ProjectActionsProps) {
+export function ProjectActions({ project }: ProjectActionsProps) {
+    const isRemote = project.type === ProjectType.RemoteSSH;
+
     return (
         <ActionPanel>
             <Action
@@ -13,22 +16,24 @@ export function ProjectActions({ projectPath }: ProjectActionsProps) {
                 title="Open in Editor"
                 onAction={async () => {
                     closeMainWindow();
-                    await openProjectInVSCode(projectPath);
+                    await openProjectInVSCode(project);
                 }}
                 shortcut={{ modifiers: [], key: "enter" }}
             />
-            <Action
-                icon={Icon.Folder}
-                title="Show in File Manager"
-                onAction={() => {
-                    closeMainWindow();
-                    showInFileBrowser(projectPath);
-                }}
-                shortcut={{ modifiers: ["shift"], key: "enter" }}
-            />
+            {!isRemote && (
+                <Action
+                    icon={Icon.Folder}
+                    title="Show in File Manager"
+                    onAction={() => {
+                        closeMainWindow();
+                        showInFileBrowser(project.path);
+                    }}
+                    shortcut={{ modifiers: ["shift"], key: "enter" }}
+                />
+            )}
             <Action.CopyToClipboard
                 title="Copy Path"
-                content={projectPath}
+                content={project.path}
                 icon={Icon.Clipboard}
                 shortcut={{ modifiers: ["ctrl"], key: "c" }}
             />
