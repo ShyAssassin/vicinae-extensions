@@ -27,6 +27,7 @@ export interface VSCodeRecentData {
 export enum VSCodeFlavour {
     Code = "Code",
     Cursor = "Cursor",
+    Positron = "Positron",
     VSCodium = "VSCodium",
     CodeInsiders = "Code - Insiders",
 }
