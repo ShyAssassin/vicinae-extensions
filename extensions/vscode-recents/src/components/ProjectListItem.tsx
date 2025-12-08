@@ -16,6 +16,8 @@ function getProjectIcon(type: ProjectType): Icon {
             return Icon.Folder;
         case ProjectType.File:
             return Icon.BlankDocument;
+        case ProjectType.RemoteSSH:
+            return Icon.Cloud;
         default:
             return Icon.QuestionMark;
     }
@@ -29,6 +31,8 @@ function getProjectTypeLabel(type: ProjectType): List.Item.Tag {
             return "Folder";
         case ProjectType.File:
             return "File";
+        case ProjectType.RemoteSSH:
+            return "SSH";
         default:
             return "Unknown";
     }
@@ -47,7 +51,7 @@ export function ProjectListItem({ project, index, onRemove }: ProjectListItemPro
                     tag: getProjectTypeLabel(project.type),
                 },
             ]}
-            actions={<ProjectActions projectPath={project.path} onRemove={onRemove} />}
+            actions={<ProjectActions project={project} onRemove={onRemove} />}
         />
     );
 }

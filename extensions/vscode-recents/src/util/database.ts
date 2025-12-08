@@ -4,7 +4,7 @@ import { promisify } from "util";
 import { DatabaseRow } from "../types";
 import initSqlJs, { Database } from "sql.js";
 import { getVSCodeStateDBPath } from "../helpers";
-import { RECENT_PROJECTS_QUERY, SQL_WASM_PATH } from "../constants";
+import { RECENT_PROJECTS_QUERY, SQL_WASM_PATH, ERROR_MESSAGES } from "../constants";
 
 const read = promisify(readFile);
 const write = promisify(writeFile);
@@ -24,7 +24,7 @@ export async function initializeDatabase(): Promise<Database> {
             locateFile: () => path.resolve(__dirname, SQL_WASM_PATH),
         });
 
-        console.log("[DEBUG] Loaded VSCode state database from:", dbPath);
+        console.log("[DEBUG] Loaded VS Code state database from:", dbPath);
         DATABASE = new SQL.Database(new Uint8Array(bufferRaw));
         return DATABASE;
     } catch (error) {
@@ -59,8 +59,8 @@ export function queryRecentProjects(): DatabaseRow[] {
         statement.free();
         return results;
     } catch (error) {
-        console.error("Failed to query the database", error);
-        throw new Error("Failed to query the database");
+        console.error(ERROR_MESSAGES.DATABASE_QUERY_FAILED, error);
+        throw new Error(ERROR_MESSAGES.DATABASE_QUERY_FAILED);
     }
 }
 

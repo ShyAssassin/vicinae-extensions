@@ -28,15 +28,36 @@ export function getVSCodeStateDBPath(): string {
     return dbPath;
 }
 
+export function isRemoteUri(uri: string): boolean {
+    return uri.startsWith("vscode-remote://");
+}
+
+export function decodeRemoteUri(uri: string): { path: string; authority: string } {
+    // Remote URIs format: vscode-remote://ssh-remote+hostname/path/to/folder
+    const match = uri.match(/^vscode-remote:\/\/([^/]+)(\/.*)?$/);
+    if (!match) {
+        throw new Error(`Invalid remote URI: ${uri}`);
+    }
+    return {
+        authority: match[1],
+        path: match[2] || "/",
+    };
+}
+
 export function decodeFileUri(uri: string): string {
     return decodeURIComponent(uri.replace(/^file:\/\//, ""));
 }
 
-export function getProjectLabel(projectPath: string, isWorkspace: boolean): string {
-    if (isWorkspace) {
-        return path.basename(projectPath, ".code-workspace");
+export function getProjectLabel(projectPath: string, isWorkspace: boolean, remoteAuthority?: string): string {
+    const baseName = isWorkspace ? path.basename(projectPath, ".code-workspace") : path.basename(projectPath);
+
+    if (remoteAuthority) {
+        // Extract hostname from ssh-remote+hostname format
+        const hostname = remoteAuthority.replace(/^ssh-remote\+/, "");
+        return `${baseName} (${hostname})`;
     }
-    return path.basename(projectPath);
+
+    return baseName;
 }
 
 export function sortProjectsByLastOpened<T extends { lastOpened: number }>(projects: T[]): T[] {
