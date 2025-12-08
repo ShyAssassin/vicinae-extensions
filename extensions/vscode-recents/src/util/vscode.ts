@@ -1,7 +1,7 @@
 import { promisify } from "util";
 import { exec } from "child_process";
-import { Preferences } from "../types";
-import { VSCODE_EXECUTABLES } from "../constants";
+import { Preferences, RecentProject, ProjectType } from "../types";
+import { VSCODE_EXECUTABLES, ERROR_MESSAGES } from "../constants";
 import { getPreferenceValues, showToast, Toast } from "@vicinae/api";
 
 const execAsync = promisify(exec);
@@ -11,7 +11,7 @@ function getVSCodeExecutable(): string {
     const executable = VSCODE_EXECUTABLES[vscodeFlavour];
 
     if (!executable) {
-        throw new Error(`Unknown VSCode flavour: ${vscodeFlavour}`);
+        throw new Error(ERROR_MESSAGES.INVALID_FLAVOUR(vscodeFlavour));
     }
 
     return executable;
@@ -26,7 +26,7 @@ async function isExecutableAvailable(executable: string): Promise<boolean> {
     }
 }
 
-export async function openProjectInVSCode(projectPath: string): Promise<void> {
+export async function openProjectInVSCode(project: RecentProject): Promise<void> {
     const { vscodeFlavour } = getPreferenceValues<Preferences>();
     const executable = getVSCodeExecutable();
 
@@ -37,12 +37,23 @@ export async function openProjectInVSCode(projectPath: string): Promise<void> {
             showToast({
                 title: "Command not found",
                 style: Toast.Style.Failure,
-                message: `Make sure the '${executable}' command is available in your PATH.`,
+                message: ERROR_MESSAGES.COMMAND_NOT_FOUND(executable),
             });
             return;
         }
 
-        await execAsync(`${executable} --new-window "${projectPath}"`);
+        let command: string;
+
+        if (project.type === ProjectType.RemoteSSH && project.remoteAuthority) {
+            // For remote SSH projects, construct the vscode-remote URI
+            const remoteUri = `vscode-remote://${project.remoteAuthority}${project.path}`;
+            command = `${executable} --new-window --folder-uri "${remoteUri}"`;
+        } else {
+            // For local projects, use the path directly
+            command = `${executable} --new-window "${project.path}"`;
+        }
+
+        await execAsync(command);
     } catch (error) {
         console.error(`Error opening project in ${vscodeFlavour}:`, error);
         showToast({
